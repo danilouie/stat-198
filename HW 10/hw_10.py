@@ -1,14 +1,15 @@
 import sketchingpy
 import data_model
+import math
 import pandas as pd
 from collections import defaultdict
 
-WIDTH = 1200
-HEIGHT = 1000
+WIDTH = 1500
+HEIGHT = 800
 
 IS_ONLINE = False
 
-TITLE = 'Wages By Age Group and College Education'
+TITLE = 'The Different Factors of Wages'
 
 PATH = '/Users/daniellelouie/Documents/Berkeley/2024-2025/stat-198/HW 9/data.csv'
 
@@ -32,6 +33,7 @@ def scale_proportion(proportion):
     max_size = 1
     return min_size + ((proportion - 0.2) ** 2) * (max_size - min_size) / ((0.5 - 0.2) ** 2)
 
+
 class GenderColor:
     def __init__(self, dataset):
         self.dataset = dataset
@@ -42,14 +44,148 @@ class GenderColor:
         else:
             color = '#a6c36f' # light green
         return color
+    
+
+class HoursColor:
+    def __init__(self, dataset):
+        self.dataset = dataset
+    
+    def hours_color(self, hours):
+        if hours == 'At Least 35 Hours':
+            color = '#e09f8f' # salmon pink
+        elif hours == 'Less than 35 Hours':
+            color = '#a17d49' # brown
+        elif hours == 'Varies or Other':
+            color = '#506587'  # navy blue
+        else:
+            color = None  # No color if it doesn't match any condition
+        return color
+    
+
+class BarGraph:
+    """Creates a bargraph on the left side of the plot. Plots the difference in 
+    wages for different races based on the hours worked."""
+    def __init__(self, dataset, canvas):
+        self.dataset = dataset
+        self.canvas = canvas
+        self.hours_color = HoursColor(dataset)
+        self.hours_order = ['At Least 35 Hours', 'Less than 35 Hours', 'Varies or Other']
+
+    def draw(self):
+        min_wage = 0
+        max_wage = 40
+
+        self.draw_hours_legend()
+        self.draw_race_title('Race')
+
+        avg_wages = defaultdict(lambda: defaultdict(list))
+
+        for record in self.dataset._records_by_id.values():
+            race = record.get_wbhaom()
+            hours_data = record.get_hoursuint()
+            wage = float(record.get_wageotc()[0].get_wage())
+            avg_wages[race][hours_data].append(wage)
+
+        bar_width = 12
+        bar_spacing = 10
+        bar_group_spacing = 20
+        chart_height = 300
+        x_offset = 120
+        y_offset = 374
+
+        self.canvas.push_style()
+        self.canvas.translate(x_offset, y_offset)
+        self.canvas.set_text_font('Arial', 12)
+        self.canvas.set_text_align('center', 'top')
+        self.canvas.set_fill('#000000')
+
+        races = list(avg_wages.keys())
+        for i, race in enumerate(races):
+            x = i * (bar_width + bar_spacing) * len(self.hours_order) + i * bar_group_spacing
+            self.canvas.push_transform()
+            self.canvas.translate(x + (bar_width + bar_spacing) * len(self.hours_order) / 2, chart_height + 20)
+            self.canvas.rotate(-30)
+            self.canvas.set_stroke_weight(0)
+            self.canvas.set_fill('#000000')
+            self.canvas.draw_text(-20, 2, race)
+            self.canvas.pop_transform()
+            for hours in self.hours_order:
+                wages = avg_wages[race][hours]
+                if wages:
+                    avg_wage = sum(wages) / len(wages)
+                    scaled_wage = scale_value(avg_wage, min_wage, max_wage, 0, chart_height)
+                    color = self.hours_color.hours_color(hours)
+                    if color:
+                        self.canvas.set_fill(color)
+                        self.canvas.draw_rect(x, chart_height - scaled_wage, bar_width, scaled_wage)
+                x += bar_width + bar_spacing
+
+        self.canvas.pop_style()
+
+    def draw_race_title(self, title):
+        """Draw the title for race."""
+        self.canvas.push_transform()
+        self.canvas.push_style()
+       
+        self.canvas.set_text_font('Arial', 20)
+        self.canvas.set_text_align('center', 'top')
+        self.canvas.set_fill('#000000')
+        self.canvas.set_stroke_weight(0)
+        self.canvas.draw_text(340, 750, title)
+
+        self.canvas.pop_style()
+        self.canvas.pop_transform()
+
+    def draw_hours_legend(self):
+        """Draw the legend for the bar graph."""
+        self.canvas.push_transform()
+        self.canvas.push_style()
+
+        self.canvas.translate(50, 100)  
+
+        self.canvas.set_stroke_weight(0)
+        self.canvas.set_text_align('left', 'center')
+        self.canvas.set_fill('#000000')
+        
+        # Title for Hours
+        self.canvas.set_fill('#000000')
+        self.canvas.set_text_font('Arial', 16)
+        self.canvas.draw_text(0, 0, 'Hours Worked')
+
+        # Legend for At Least 35 Hours
+        self.canvas.set_text_font('Arial', 14)
+        self.canvas.translate(0, 30)
+        self.canvas.set_fill('#e09f8f')  
+        self.canvas.draw_rect(0, 0, 10, 10)
+        self.canvas.set_fill('#000000')
+        self.canvas.draw_text(20, 7, 'At Least 35 Hours')
+
+        # Legend for Less than 35 Hours
+        self.canvas.translate(0, 30)
+        self.canvas.set_fill('#a17d49') 
+        self.canvas.draw_rect(0, 0, 10, 10)
+        self.canvas.set_fill('#000000')
+        self.canvas.draw_text(20, 7, 'Less than 35 Hours')
+
+        # Legend for Varies or Other
+        self.canvas.translate(0, 30)
+        self.canvas.set_fill('#506587') 
+        self.canvas.draw_rect(0, 0, 10, 10)
+        self.canvas.set_fill('#000000')
+        self.canvas.draw_text(20, 7, 'Varies or Other')
+
+        self.canvas.pop_style()
+        self.canvas.pop_transform()
 
 class ScatterPlot:
+    """Creates a scatterplot on the right side of the plot."""
     def __init__(self, dataset, width, height):
         self.dataset = dataset
         self.width = width
         self.height = height
         self.gender_color = GenderColor(dataset)
         self.canvas = sketchingpy.Sketch2D(width, height, TITLE)
+        self.bar_graph = BarGraph(dataset, self.canvas)
 
     def draw(self):
         min_age = 20
@@ -59,9 +195,9 @@ class ScatterPlot:
 
         self.canvas.clear("#ffffff")
         self.draw_title(TITLE)
-        self.draw_x_axis()
+        self.draw_age_graph()
         self.draw_y_axis(min_wage, max_wage)
-        self.draw_x_axis_title('Age Group')
+        self.draw_age_title('Age Group')
         self.draw_y_axis_title('Average Wage (Hourly)')
         self.draw_legend(min_wage, max_wage)
 
@@ -79,12 +215,11 @@ class ScatterPlot:
             if education_level in ['College', 'Advanced']:
                 college_counts[age_group][is_female] += 1
 
-
         for age_group, gender_data in avg_wages.items():
             for is_female, wages in gender_data.items():
                 avg_wage = sum(wages) / len(wages)
-                age = scale_value(age_group_to_midpoint(age_group), min_age, max_age, 250, WIDTH - 400)
-                wage = scale_value(avg_wage, min_wage, max_wage, HEIGHT - 150, 100)
+                age = scale_value(age_group_to_midpoint(age_group), min_age, max_age, 750, WIDTH - 350)
+                wage = scale_value(avg_wage, min_wage, max_wage, HEIGHT - 150, 150)
 
                 color = self.gender_color.gender_color(is_female)
                 self.canvas.set_fill(color)
@@ -94,19 +229,21 @@ class ScatterPlot:
                 scaled_proportion = scale_proportion(proportion)
                 ellipse_size = scale_value(scaled_proportion, 0, 1, 5, 30)  
                 self.canvas.draw_ellipse(age, wage, ellipse_size, ellipse_size)
-                
+        
+        self.bar_graph.draw()
+
         self.canvas.show()
 
-    def draw_x_axis(self):
+    def draw_age_graph(self):
         """Draw the x-axis with age labels."""
         self.canvas.push_transform()
         self.canvas.push_style()
 
         # draw x-axis line
         self.canvas.set_stroke_weight(2)
-        self.canvas.draw_line(200, self.height - 150, self.width - 350, self.height - 150)
+        self.canvas.draw_line(100, self.height - 125, self.width - 275, self.height - 125)
 
-        self.canvas.translate(0, self.height - 125)  
+        self.canvas.translate(0, self.height - 75)  
 
         self.canvas.set_text_font('Arial', 16)
         self.canvas.set_text_align('center', 'top')
@@ -118,25 +255,28 @@ class ScatterPlot:
         max_age = 70
         for label in age_labels:
             self.canvas.set_stroke_weight(1)
-            x = scale_value(age_group_to_midpoint(label), min_age, max_age, 250, WIDTH - 400)
-            self.canvas.draw_text(x, 0, label)
+            x = scale_value(age_group_to_midpoint(label), min_age, max_age, 750, WIDTH - 350)
+            self.canvas.set_stroke('#d3d3d3')  
+            self.canvas.draw_line(x, -self.height + 200, x, -52)
+            self.canvas.draw_text(x, -25, label)
 
         self.canvas.pop_style()
         self.canvas.pop_transform()
 
-    def draw_x_axis_title(self, title):
+    def draw_age_title(self, title):
         """Draw the title for the x-axis."""
         self.canvas.push_transform()
         self.canvas.push_style()
-
+       
         self.canvas.set_text_font('Arial', 20)
         self.canvas.set_text_align('center', 'top')
         self.canvas.set_fill('#000000')
-        self.canvas.draw_text(self.width / 2 - 75, self.height - 75, title)
+        self.canvas.set_stroke_weight(0)
+        self.canvas.draw_text(950, self.height - 50, title)
 
         self.canvas.pop_style()
         self.canvas.pop_transform()
-
+    
     def draw_y_axis(self, min_wage, max_wage):
         """Draw the y-axis with wage labels."""
         self.canvas.push_transform()
@@ -145,9 +285,9 @@ class ScatterPlot:
         # draw y-axis line
         self.canvas.set_stroke('#000000')
         self.canvas.set_stroke_weight(2)
-        self.canvas.draw_line(200, 100, 200, self.height - 150)
+        self.canvas.draw_line(670, 125, 670, self.height - 125)
 
-        self.canvas.translate(200, 0)  
+        self.canvas.translate(670, 0)  
 
         self.canvas.set_text_font('Arial', 16)
         self.canvas.set_text_align('right', 'center')
@@ -158,8 +298,14 @@ class ScatterPlot:
         current_wage = (min_wage // wage_interval) * wage_interval
         while current_wage <= max_wage:
             self.canvas.set_stroke_weight(1)
-            y = scale_value(current_wage, min_wage, max_wage, HEIGHT - 150, 100)
-            self.canvas.draw_text(-10, y, f'{current_wage:.2f}')  
+            y = scale_value(current_wage, min_wage, max_wage, HEIGHT - 125, 150)
+            self.canvas.set_stroke('#d3d3d3') 
+            if current_wage == 0:
+                # draw '0' at the origin
+                self.canvas.draw_text(15, y + 30, f'{current_wage:.2f}') 
+            else:
+                self.canvas.draw_text(-10, y, f'{current_wage:.2f}')  
+                self.canvas.draw_line(2, y, self.width - 950, y)
             current_wage += wage_interval
 
         self.canvas.pop_style()
@@ -172,10 +318,9 @@ class ScatterPlot:
     
         self.canvas.set_text_font('Arial', 18)
         self.canvas.set_text_align('center', 'center')
+        self.canvas.set_stroke_weight(0)
         self.canvas.set_fill('#000000')
-        self.canvas.translate(50, self.height / 2)
-        self.canvas.rotate(-90)
-        self.canvas.draw_text(0, 40, title)
+        self.canvas.draw_text(670, 100, title)
 
         self.canvas.pop_style()
         self.canvas.pop_transform()
@@ -185,13 +330,20 @@ class ScatterPlot:
         self.canvas.push_transform()
         self.canvas.push_style()
 
-        self.canvas.translate(self.width - 230, 50)  
+        self.canvas.translate(self.width - 230, 70)  
 
-        self.canvas.set_text_font('Arial', 16)
+        self.canvas.set_stroke_weight(0)
         self.canvas.set_text_align('left', 'center')
         self.canvas.set_fill('#000000')
+        
+        # Title for Gender
+        self.canvas.set_fill('#000000')
+        self.canvas.set_text_font('Arial', 16)
+        self.canvas.draw_text(0, 0, 'Gender')
 
         # Legend for female
+        self.canvas.set_text_font('Arial', 14)
+        self.canvas.translate(0, 30)
         self.canvas.set_fill('#9d8cd6')  
         self.canvas.draw_ellipse(0, 0, 10, 10)
         self.canvas.set_fill('#000000')
@@ -207,8 +359,11 @@ class ScatterPlot:
         # Legend for circle sizes
         self.canvas.translate(0, 60)
         self.canvas.set_fill('#000000')
+        self.canvas.set_text_font('Arial', 16)
         self.canvas.draw_text(0, 0, 'Proportion of College or More')
 
+        self.canvas.set_stroke_weight(0)
+        self.canvas.set_text_font('Arial', 14)
         proportions = [0.2, 0.3, 0.4, 0.5]
         for proportion in proportions:
             self.canvas.translate(0, 50)
@@ -229,10 +384,11 @@ class ScatterPlot:
         self.canvas.set_text_font('Arial', 28)
         self.canvas.set_text_align('center', 'bottom')
         self.canvas.set_fill('#000000')
-        self.canvas.draw_text(self.width / 2 - 65, 70, title)
+        self.canvas.draw_text(self.width / 2 - 65, 60, title)
 
         self.canvas.pop_style()
         self.canvas.pop_transform()
+
 
 if IS_ONLINE:
     sketch = sketchingpy.Sketch2D(WIDTH, HEIGHT)
