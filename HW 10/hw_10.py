@@ -11,7 +11,7 @@ IS_ONLINE = False
 
 TITLE = 'The Different Factors of Wages'
 
-PATH = '/Users/daniellelouie/Documents/Berkeley/2024-2025/stat-198/HW 9/data.csv'
+PATH = '/Users/daniellelouie/Documents/Berkeley/2024-2025/STAT 198/stat-198/HW 9/data.csv'
 
 def age_group_to_midpoint(age_group):
     age_ranges = {
