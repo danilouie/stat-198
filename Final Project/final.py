@@ -266,6 +266,45 @@ class RadarChart:
 
 class LineGraph:
     """Creates a line graph for visualizing the renewable energy consumption over the years."""
+    def __init__(self, canvas, width, height):
+        self.canvas = canvas
+        self.width = width
+        self.height = height
+
+    def draw(self):
+        # Generate random data for years and values
+        years = list(range(2000, 2021))  # Years from 2000 to 2020
+        values = [random.randint(50, 100) for _ in years]  # Random values for each year
+        max_value = max(values)
+
+        # Line graph dimensions
+        graph_x_start = 550
+        graph_x_end = 1025
+        graph_y_start = 500
+        graph_y_end = 800
+
+        # Scale the data to fit within the graph dimensions
+        x_spacing = (graph_x_end - graph_x_start) / (len(years) - 1)
+        y_scale = (graph_y_start - graph_y_end) / max_value
+
+        # Plot the data points and connect them with lines
+        points = []
+        for i, value in enumerate(values):
+            x = graph_x_start + i * x_spacing
+            y = graph_y_start - value * y_scale
+            points.append((x, y))
+
+            # Draw the data point
+            self.canvas.set_fill("#FF0000")
+            self.canvas.draw_ellipse(x, y, 3, 3)  # Small circle for the data point
+
+        # Connect the points with lines
+        self.canvas.set_stroke("#FF0000")
+        self.canvas.set_stroke_weight(2)
+        for i in range(len(points) - 1):
+            x1, y1 = points[i]
+            x2, y2 = points[i + 1]
+            self.canvas.draw_line(x1, y1, x2, y2)
 
 
 class Dropdown:
@@ -317,6 +356,9 @@ rankedBar.draw()
 radar = RadarChart(sketch, WIDTH, HEIGHT)
 radar.draw()
 
+lineGraph = LineGraph(sketch, WIDTH, HEIGHT)
+lineGraph.draw()
+
 dropdown = Dropdown(sketch, 750, 100)
 dropdown.draw()
 
@@ -326,8 +368,8 @@ bar_axis.draw_x_axis(60, 460, HEIGHT - 419)
 bar_axis.draw_y_axis(137, HEIGHT - 75, 460)
 
 line_axis = Axis(sketch, WIDTH, HEIGHT)
-line_axis.draw_x_axis(600, 1050, HEIGHT - 75)
-line_axis.draw_y_axis(550, HEIGHT - 75, 600)
+line_axis.draw_x_axis(550, 1050, HEIGHT - 75)
+line_axis.draw_y_axis(550, HEIGHT - 75, 550)
 
 stacked_axis = Axis(sketch, WIDTH, HEIGHT)
 stacked_axis.draw_x_axis(1150, 1500, HEIGHT - 75)
