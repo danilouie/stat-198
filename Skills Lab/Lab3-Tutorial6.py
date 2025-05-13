@@ -51,3 +51,4 @@ sketch.pop_style()
 sketch.draw_ellipse(350, 250, 20, 20)
 
 sketch.show()
+input("Press Enter to close the sketch...")

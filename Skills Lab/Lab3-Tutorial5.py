@@ -1,6 +1,6 @@
 import sketchingpy
 
-sketch = sketchingpy.Sketch2D(500, 500)
+sketch = sketchingpy.Sketch2DA(500, 500)
 
 # sets background to white as default
 sketch.clear("#ffffff")
@@ -22,6 +22,7 @@ sketch.clear("#ffffff")
 # sketch.set_stroke("#33a02c")
 # sketch.clear_fill()
 # sketch.draw_ellipse(350, 250, 100, 100)
+
 
 sketch.set_ellipse_mode("radius")
 

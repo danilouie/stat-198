@@ -2,7 +2,7 @@ import sketchingpy
 import sketchingpy.geo
 
 
-sketch = sketchingpy.Sketch2DWeb(500, 500)
+sketch = sketchingpy.Sketch2DApp(500, 500)
 sketch.clear('#F0F0FF')
 
 # Center the map on San Francisco and place in middle of sketch

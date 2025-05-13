@@ -131,4 +131,3 @@ draw_pupil()
 draw_shine()
 
 sketch.show()
-input("Press Enter to close the sketch...")
