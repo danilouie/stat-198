@@ -23,9 +23,6 @@ CAPITA_COLORS = {
 }
 
 
-# TODO: Add actual data and scale the values accordingly
-# TODO: Add interactivity - priority is for the large bar chart, then for the different years
-
 sketch = sketchingpy.Sketch2DApp(WIDTH, HEIGHT)
 sketch.clear('#FFFFFF')
 
@@ -128,7 +125,7 @@ class LoadData:
                 print(f"Missing column in the CSV file: {e}")
                 continue
 
-        # Extract years from the first row (header)
+        # Extract years from the first row
         data["Years"] = [int(year) for year in csv_data[0] if year.isdigit()]
         return data
     
@@ -156,7 +153,7 @@ class Axis:
         self.canvas.set_fill('#000000')
         self.canvas.set_stroke_weight(0)
         self.canvas.set_text_align('center', 'center')
-        self.canvas.set_text_font('Arial', 16)
+        self.canvas.set_text_font('Arial', 18)
         self.canvas.draw_text(x, y, title)
 
     def draw_y_axis(self, y_start, y_end, x_base):
@@ -212,7 +209,6 @@ class Sector:
             bar_height = value * scale_factor  
             y = y_base - bar_height
 
-            # Draw the bar
             self.canvas.set_stroke("#000000")
             self.canvas.set_stroke_weight(0)
             self.canvas.set_fill(SECTOR_COLORS[category])
@@ -228,7 +224,7 @@ class Sector:
     def draw_legend(self, categories):
         """Draw a horizontal legend at the top left."""
         legend_x_start = 40
-        legend_y_start = 50
+        legend_y_start = 70
         legend_box_size = 20
         spacing = 8
 
@@ -334,12 +330,26 @@ class RankedBar:
         self.width = width
         self.height = height
         self.data = data
-        self.criteria = 'Total Energy Consumption (BTU)'  # Default criteria
+        self.criteria = "Total Energy Consumption (BTU)"  # Default criteria
 
     def set_criteria(self, criteria):
         """Set the criteria for ranking the states based on user selection."""
-        self.criteria = criteria
-    
+        self.criteria = criteria   
+
+        # Clear and redraw ranked chart
+        x_base = 1150
+        y_start = 115
+        bar_area_width = 400
+        bar_area_height = self.height 
+        self.canvas.set_fill('#FFFFFF')
+        self.canvas.draw_rect(x_base - 10, y_start - 10, bar_area_width, bar_area_height)
+        self.draw() 
+
+        # Redraw the x and y axes
+        bar_axis = Axis(self.canvas, self.width, self.height)
+        bar_axis.draw_x_axis(1150, 1500, self.height - 75)  
+        bar_axis.draw_y_axis(132, self.height - 75, 1150)  
+        stacked_axis.draw_x_axis_title(1325, 870, "Consumption Estimates (billion BTU)")
 
     def draw(self):
         # Sort states by the selected criteria
@@ -367,7 +377,7 @@ class RankedBar:
                 self.canvas.set_fill("#d0d0d0")  # Gray for other states
 
             # Draw the bar
-            self.canvas.set_stroke("#000000")  # Black border
+            self.canvas.set_stroke("#000000")  
             self.canvas.set_stroke_weight(0)
             self.canvas.draw_rect(x, y + 10, value, bar_height)
 
@@ -375,38 +385,39 @@ class RankedBar:
             self.canvas.set_fill("#000000")
             self.canvas.set_text_align("left", "center")  # Align text to the left
             self.canvas.set_text_font("Arial", 10)
-            self.canvas.draw_text(x + value + 10, y + bar_height / 2 + 10, state)  # Position label to the right of the bar
+            self.canvas.draw_text(x + value + 10, y + bar_height / 2 + 10, state)  
     
         self.draw_x_axis_counts(x_base, y_end, bar_height, spacing, max_value, scale_factor)
 
     # Draw the x-axis labels
     def draw_x_axis_counts(self, x_base, y_end, bar_height, spacing, max_value, scale_factor):
         """Draw counts on the x-axis for the RankedBar graph."""
-        tick_spacing_value = 200000
-        tick_spacing = (max_value / tick_spacing_value) 
-        num_ticks = 6
+        # Draw the ticks and labels
+        num_ticks = 4  
+        tick_spacing = 315 / num_ticks  
+        tick_spacing_value = max_value / num_ticks
 
-        for i in range(num_ticks):
+        for i in range(num_ticks + 1):
             x = x_base + i * tick_spacing
             value = i * tick_spacing_value
 
             # Draw the tick
             self.canvas.set_stroke("#000000")
             self.canvas.set_stroke_weight(2)
-            self.canvas.draw_line(x, y_end - 30, x, y_end - 20)  
+            self.canvas.draw_line(x, y_end - 30, x, y_end - 20)
 
             # Draw the tick label
             self.canvas.set_stroke_weight(0)
             self.canvas.set_fill("#000000")
             self.canvas.set_text_align("center", "top")
             self.canvas.set_text_font("Arial", 10)
-            self.canvas.draw_text(x, y_end - 15, f"{int(value)}")
+            self.canvas.draw_text(x, y_end - 15, f"{value:,.2f}" if isinstance(value, float) else f"{int(value):,}")
 
         # Draw the x-axis label
         self.canvas.set_stroke_weight(0)
         self.canvas.set_fill("#000000")
         self.canvas.set_text_align("center", "bottom")
-        self.canvas
+        self.canvas.set_text_font("Arial", 12)
 
 
 class RadarChart:
@@ -423,8 +434,8 @@ class RadarChart:
         max_value = max(values)
         
         # Radar chart dimensions
-        center_x = self.width / 2 
-        center_y = 330
+        center_x = self.width / 2 + 10
+        center_y = 350
         radius = 180
         axis_extension = 10
 
@@ -441,7 +452,7 @@ class RadarChart:
                 x = center_x + r * math.cos(angle)
                 y = center_y + r * math.sin(angle)
                 points.append((x, y))
-            # Connect the vertices to form the pentagon
+            # Connect the vertices
             self.canvas.set_stroke("#cccccc")  # Light gray for the grid
             self.canvas.set_stroke_weight(2)
             for j in range(len(points)):
@@ -452,7 +463,7 @@ class RadarChart:
             # Add number labels for each layer
             layer_value = level * increment
             label_x = center_x + 20
-            label_y = center_y - r - 5  # Position the label along the vertical axis
+            label_y = center_y - r - 5  # Position the label next to the vertical axis
             self.canvas.set_fill("#000000")
             self.canvas.set_text_align("center", "center")
             self.canvas.set_stroke_weight(0)
@@ -471,8 +482,8 @@ class RadarChart:
             self.canvas.draw_line(center_x, center_y, x, y)
 
             # Add category labels
-            label_x = center_x + (radius + 50) * math.cos(angle)
-            label_y = center_y + (radius + 50) * math.sin(angle)
+            label_x = center_x + (radius + 40) * math.cos(angle)
+            label_y = center_y + (radius + 40) * math.sin(angle)
             self.canvas.set_fill("#000000")
             self.canvas.set_text_align("center", "center")
             self.canvas.set_stroke_weight(0)
@@ -493,18 +504,13 @@ class RadarChart:
         self.canvas.set_stroke_weight(2)
         for i in range(len(points)):
             x1, y1 = points[i]
-            x2, y2 = points[(i + 1) % len(points)]  # Connect to the next point, wrapping around
+            x2, y2 = points[(i + 1) % len(points)] 
             self.canvas.draw_line(x1, y1, x2, y2)
 
         # Draw the data points
         for x, y in points:
             self.canvas.set_fill("#0ec30e")
             self.canvas.draw_ellipse(x, y, 3, 3) 
-        
-        # Reset canvas settings to avoid affecting other charts
-        self.canvas.set_fill("#000000")  # Default fill color (black)
-        self.canvas.set_stroke("#000000")  # Default stroke color (black)
-        self.canvas.set_stroke_weight(1)  # Default stroke weight
 
 
 class LineGraph:
@@ -662,9 +668,17 @@ class DropdownRank:
                 self.canvas.set_text_align('center', 'center')
                 self.canvas.set_text_font('Arial', 12)
                 self.canvas.draw_text(self.x + self.width / 2, option_y + self.height / 2, option)
+        
+        elif self.is_expanded == False:
+            self.canvas.set_fill('#000000')
+            self.canvas.set_stroke_weight(0)
+            self.canvas.set_text_align('center', 'center')
+            self.canvas.set_text_font('Arial', 12)
+            self.canvas.draw_text(self.x + self.width / 2, self.y + self.height / 2, self.selected_option)
 
     def on_click(self, x, y):
         """Handle mouse click events."""
+        # Check if the click is within the dropdown box
         if self.x <= x <= self.x + self.width and self.y <= y <= self.y + self.height:
             # Toggle the dropdown expansion
             self.is_expanded = not self.is_expanded
@@ -676,36 +690,11 @@ class DropdownRank:
                     # Update the selected option and collapse the dropdown
                     self.selected_option = option
                     self.is_expanded = False
-                    self.callback(self.selected_option)  # Call the callback function
+                    self.callback(self.selected_option) 
                     break
         else:
             # Collapse the dropdown if clicked outside
             self.is_expanded = False
-
-
-class DropdownTemp:
-    """Creates multiple dropdown for user interaction.
-
-    First Dropdown: year
-
-    Second Dropdown:
-        - Total energy consumption estimates
-        - Real gross domestic product (GDP)
-        - Energy consumption estimates per real dollar of GDP""" 
-    
-    # Temporarily draws a rectangle where the dropodown will be
-    def __init__(self, canvas, width, height):
-        self.canvas = canvas
-        self.width = width
-        self.height = height
-
-    # Draws a rectangle for selecting the year
-    def draw(self):
-        self.canvas.set_stroke('#000000')
-        self.canvas.set_stroke_weight(2)
-        self.canvas.set_fill('#FFFFFF')
-        self.canvas.draw_rect(WIDTH/2 - 100, 85, 200, 20)  # Placeholder for dropdown
-        self.canvas.draw_rect(1225, 85, 200, 20)  # Placeholder for dropdown
 
 
 def draw_title(title):
@@ -714,6 +703,14 @@ def draw_title(title):
     sketch.set_text_align('center', 'bottom')
     sketch.set_fill('#000000')
     sketch.draw_text(WIDTH/2, 60, title)
+
+def draw_explanation(x, y, title):
+    """Draw any explanations needed for the visualization"""
+    sketch.set_text_font('Arial', 12)
+    sketch.set_text_align('right', 'center')
+    sketch.set_fill('#000000')
+    sketch.set_stroke_weight(0)
+    sketch.draw_text(x, y, title)
 
 # Load the data
 load_data = LoadData(sketch)
@@ -727,6 +724,10 @@ FOSSIL_FUEL = load_data.load_ff_data('/Users/daniellelouie/Documents/Berkeley/20
 # Draw the title
 draw_title(TITLE)
 
+# Draw the explanation
+BTU_EXPLANATION = "BTU: British Thermal Unit"
+draw_explanation(477, 870, BTU_EXPLANATION)
+
 # Draw the graphs
 sector = Sector(sketch, WIDTH, HEIGHT, SECTOR_T0T_2022)
 sector.draw()
@@ -735,15 +736,13 @@ perCapita = PerCapita(sketch, WIDTH, HEIGHT, SECTOR_PRICES_2022)
 perCapita.draw()
 
 rankedBar = RankedBar(sketch, WIDTH, HEIGHT, USE_TOT_REALGDP_2022)
+rankedBar.draw()
 
 radar = RadarChart(sketch, WIDTH, HEIGHT, RENEWABLE_2022)
 radar.draw()
 
 lineGraph = LineGraph(sketch, WIDTH, HEIGHT, FOSSIL_FUEL)
 lineGraph.draw()
-
-# dropdownTemp = DropdownTemp(sketch, 750, 100)
-# dropdownTemp.draw()
 
 # Create the dropdown
 dropdown = DropdownRank(sketch, 1225, 85, 200, 20, [
@@ -753,32 +752,27 @@ dropdown = DropdownRank(sketch, 1225, 85, 200, 20, [
 ], rankedBar.set_criteria)
 
 dropdown.draw()
-rankedBar.draw()
-
-# Draw everything
-# def draw():
-#     # sketch.clear("#ffffff")
-#     dropdown.draw()
-#     rankedBar.draw()
 
 # Handle mouse button presses
-# def on_click(button):
-#     """Handle mouse button presses."""
-#     mouse = sketch.get_mouse()
-#     x, y = mouse.get_pointer_x(), mouse.get_pointer_y()
-
-#     dropdown.on_click(x, y)
-#     # draw()
+def on_click(button):
+    """Handle mouse button presses."""
+    mouse = sketch.get_mouse()
+    x, y = mouse.get_pointer_x(), mouse.get_pointer_y()
+    dropdown.on_click(x, y)  
+    dropdown.draw()
 
 # Set up the sketch to handle mouse button presses
-# sketch.get_mouse().on_button_press(on_click)
+sketch.get_mouse().on_button_press(on_click)
 
 # Draw the axes
 bar_axis = Axis(sketch, WIDTH, HEIGHT)
 bar_axis.draw_x_axis(60, 460, HEIGHT - 419)
 bar_axis.draw_y_axis(137, HEIGHT - 75, 460)
-bar_axis.draw_y_axis_title(475, 100, "Energy Consumption (billion BTU)")
-bar_axis.draw_y_axis_title(475, 870, "Average Energy Prices ($/million BTU)")
+bar_axis.draw_y_axis_title(475, 120, "Energy Consumption (billion BTU)")
+bar_axis.draw_y_axis_title(475, 840, "Average Energy Prices ($/million BTU)")
+
+radar_axis = Axis(sketch, WIDTH, HEIGHT)
+radar_axis.draw_x_axis_title(800, 95, "Renewable Energy Consumption (billion BTU)")
 
 line_axis = Axis(sketch, WIDTH, HEIGHT)
 line_axis.draw_x_axis(600, 1070, HEIGHT - 75)
