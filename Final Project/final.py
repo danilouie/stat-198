@@ -623,6 +623,31 @@ class LineGraph:
             self.canvas.set_text_align("right", "center")
             self.canvas.set_text_font("Arial", 10)
             self.canvas.draw_text(graph_x_start - 15, y, f"{int(value)}")
+        
+        # Draw the legend
+        self.draw_legend(natural_gas, petroleum)
+
+    def draw_legend(self, natural_gas, petroleum):
+        """Draw a horizontal legend at the top left."""
+        legend_x = 950
+        legend_y = 570
+        box_size = 20
+        spacing = 8
+
+        self.canvas.set_fill("#e87e2b")  
+        self.canvas.set_stroke_weight(0)
+        self.canvas.draw_rect(legend_x, legend_y, box_size, box_size)
+        self.canvas.set_fill("#000000")
+        self.canvas.set_text_align("left", "center")
+        self.canvas.set_text_font("Arial", 14)
+        self.canvas.draw_text(legend_x + box_size + spacing, legend_y + box_size / 2, "Natural Gas")
+
+        # Petroleum
+        self.canvas.set_fill("#a649a6")  
+        self.canvas.set_stroke_weight(0)
+        self.canvas.draw_rect(legend_x, legend_y + box_size + spacing, box_size, box_size)
+        self.canvas.set_fill("#000000")
+        self.canvas.draw_text(legend_x + box_size + spacing, legend_y + 1.5 * box_size + spacing, "Petroleum")
     
 
 class DropdownRank:
